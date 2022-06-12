@@ -4,6 +4,17 @@ This shell script installs Greenbone Security Assistant (formerly OpenVAS) on
 a freshly installed FreeBSD system. This script has been tested on FreeBSD 
 13.1 GENERIC STABLE.
 
+This script is based on my original outline found at
+https://forums.freebsd.org/threads/greenbone-security-assistant-installation-previously-openvas.80563/
+and has been expanded for some additional tidbits found during updated
+installation runs. Hence, this script should be in general more up to
+date than the forum post.
+
+However, I still highly recommend looking at the forum to get an idea on
+how to keep your installation up to date. Keeping your system up to date
+will be crucial if you want to compare scans over time. Otherwise, you'll
+allways have to start with a new installation.
+
 ## Network configuration
 
 Installation is done via binary packages. If you are operating behind a proxy
