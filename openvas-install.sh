@@ -55,6 +55,7 @@ fi
 
 echo Installing patch.
 cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
+cp ${BPATH}/patch/patch-src_gsad_gmp.c /usr/ports/security/gsad/files
 
 echo DATABASE
 echo Installing postgresql database.
@@ -125,6 +126,8 @@ cd /usr/ports/security/py-notus-scanner
 make install
 cd /usr/ports/security/gvmd
 make install
+cd /usr/ports/security/gsad
+make install
 
 echo Configure Notus scanner.
 echo "[notus-scanner]" > /usr/local/etc/gvm/notus-scanner.toml
@@ -147,7 +150,7 @@ service devfs restart
 fi
 
 echo Installing greenbone security assistant.
-pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm gsad openvas
+pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm openvas
 echo Update openvas config
 set +e
 cat /usr/local/etc/openvas/openvas.conf | grep db_address > /dev/null
