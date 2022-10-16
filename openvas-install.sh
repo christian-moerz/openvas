@@ -48,13 +48,17 @@ cat /etc/make.conf | grep WRKDIRPREFIX > /dev/null
 if [ "0" != "$?" ]; then
 	echo "WRKDIRPREFIX?= /usr/ports/build" >> /etc/make.conf
 fi
+if [ ! -e /usr/ports/build ]; then
+	mkdir -p /usr/ports/build
+fi
 set -e
 
 echo PREREQS
 echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
 	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket \
-	py39-urllib3 mosquitto gsa pg-gvm
+	py39-urllib3 mosquitto gsa pg-gvm p5-XML-Parser wget xmlstarlet autoconf \
+	automake sshpass socat zip samba412
 cd /usr/ports
 if [ ! -e /usr/ports/.git ]; then
 	git clone --depth 1 --branch ${PORTBRANCH} https://git.freebsd.org/ports.git /usr/ports
@@ -202,12 +206,12 @@ echo Configure and integrate mosquitto.
 echo "mqtt_server_uri = localhost:1883" >> /usr/local/etc/openvas/openvas.conf
 
 # make sure gvmd isn't running already
-set -e
+set +e
 ps ax |grep gvmd > /dev/null
 if [ "0" == "$?" ]; then
 	service gvmd onestop
 fi
-set +e
+set -e
 
 sysrc mosquitto_enable=YES
 sysrc gsad_enable=YES
