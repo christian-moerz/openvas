@@ -241,8 +241,7 @@ set -e
 if [ "" != "${ADMIN_UUID}" ]; then
 	echo admin user already exists. Not creating.
 else
-	echo Credating GVM admin user : ${USER_ADMIN}
-	su -m gvm -c "gvmd --create-user=admin"
+	echo Creating GVM admin user : ${USER_ADMIN}
 	su -m gvm -c "gvmd --create-user=admin --password=${USER_ADMIN}"
 fi
 ADMIN_UUID=$(su -m gvm -c "gvmd --get-users -v" | grep admin|awk '{print $2}')
