@@ -43,6 +43,13 @@ echo This installation is automated and does not require any further user
 echo interaction but it will take a while to complete...
 echo ""
 
+set +e
+cat /etc/make.conf | grep WRKDIRPREFIX > /dev/null
+if [ "0" != "$?" ]; then
+	echo "WRKDIRPREFIX?= /usr/ports/build" >> /etc/make.conf
+fi
+set -e
+
 echo PREREQS
 echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
