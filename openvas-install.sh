@@ -9,8 +9,11 @@ COMPANY=Company
 DEPARTMENT="IT Department"
 DOMAIN=openvas
 PYVER=py39
+PORTBRANCH=2022Q4
 
 PSQL_VERSION=13
+
+BPATH=$(dirname $0)
 
 echo Installing prerequisites.
 pkg install -y pwgen
@@ -41,14 +44,20 @@ echo ""
 echo PREREQS
 echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
-	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket
+	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket \
+	py39-urllib3 mosquitto gsa pg-gvm
 cd /usr/ports
-git clone --depth 1 --branch 2022Q4 https://git.freebsd.org/ports.git /usr/ports
+if [ ! -e /usr/ports/.git ]; then
+	git clone --depth 1 --branch ${PORTBRANCH} https://git.freebsd.org/ports.git /usr/ports
+fi
+
+echo Installing patch.
+cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
 
 echo DATABASE
 echo Installing postgresql database.
 set +e
-pkg info | grep postgresql${PSQL_VERSION} > /dev/null
+pkg info | grep postgresql${PSQL_VERSION}-server > /dev/null
 if [ "0" != "$?" ]; then
 	set -e
 	pkg install -y postgresql${PSQL_VERSION}-server postgresql${PSQL_VERSION}-contrib
@@ -62,6 +71,7 @@ if [ "0" != "$?" ]; then
 	su -l postgres -c "createdb -E utf8 -O gvm gvmd"
 	su -l postgres -c "psql -c \"create extension \\\"uuid-ossp\\\";\" gvmd"
 	su -l postgres -c "psql -c \"create extension \\\"pgcrypto\\\";\" gvmd"
+	su -l postgres -c "psql -c \"create extension \\\"pg-gvm\\\";\" gvmd"
 	su -l postgres -c "psql -c \"create role dba with superuser noinherit;\" gvmd"
 	su -l postgres -c "psql -c \"grant dba to gvm;\" gvmd"
 else
@@ -109,9 +119,33 @@ echo Installing openvas scanner.
 #pkg install -y py38-ospd-openvas openvas
 cd /usr/ports/security/py-ospd-openvas
 make install
+cd /usr/ports/security/py-notus-scanner
+make install
+cd /usr/ports/security/gvmd
+make install
+
+echo Configure Notus scanner.
+echo "[notus-scanner]" > /usr/local/etc/gvm/notus-scanner.toml
+echo 'mqtt-broker-address = "localhost"' >> /usr/local/etc/gvm/notus-scanner.toml
+echo 'mqtt-broker-port = "1883"' >> /usr/local/etc/gvm/notus-scanner.toml
+echo 'products-directory = "/var/lib/openvas/plugins/notus/products"' >> /usr/local/etc/gvm/notus-scanner.toml
+echo 'log-level = "INFO"' >> /usr/local/etc/gvm/notus-scanner.toml
+echo "disable-hashsum-verification = false" >> /usr/local/etc/gvm/notus-scanner.toml
+
+set +e
+cat /etc/devfs.conf | grep bpf > /dev/null
+set -e
+if [ "0" != "$?" ]; then
+	echo Fixing devfs configuration for gvm
+	echo <EOF >> /etc/devfs.conf
+   own     bpf     root:gvm
+   perm    bpf     0660
+EOF
+service devfs restart
+fi
 
 echo Installing greenbone security assistant.
-pkg install -y gvm gvm-libs gvmd ${PYVER}-gvm-tools ${PYVER}-python-gvm gsad
+pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm gsad openvas
 echo Update openvas config
 set +e
 cat /usr/local/etc/openvas/openvas.conf | grep db_address > /dev/null
@@ -153,11 +187,26 @@ mkdir -p /var/lib/gvm/data-objects/gvmd
 mkdir -p /var/lib/gvm/scap-data
 chown -R gvm:gvm /var/lib/gvm
 
+echo Configure and integrate mosquitto.
+echo "mqtt_server_uri = localhost:1883" >> /usr/local/etc/openvas/openvas.conf
+
 sysrc gsad_enable=YES
 sysrc gvmd_enable=YES
 sysrc ospd_openvas_enable=YES
+sysrc notus_scanner_enable=YES
 # Populate database
 su -m gvm -c "gvmd -m"
+
+# Set up certificates via gvm
+# su -m gvm -c "gvm-manage-certs -a
+
+# synchronize feeds
+chown -R gvm /var/lib/openvas/
+su -m gvm -c "cd /tmp && greenbone-nvt-sync"
+su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
+su -m gvm -c "greenbone-feed-sync --type SCAP"
+su -m gvm -c "greenbone-feed-sync --type CERT"
+
 # Create admin user
 set +e
 ADMIN_UUID=$(su -m gvm -c "gvmd --get-users -v" | grep admin|awk '{print $2}')
@@ -165,16 +214,12 @@ set -e
 if [ "" != "${ADMIN_UUID}" ]; then
 	echo admin user already exists. Not creating.
 else
+	echo Credating GVM admin user : ${USER_ADMIN}
+	su -m gvm -c "gvmd --create-user=admin"
 	su -m gvm -c "gvmd --create-user=admin --password=${USER_ADMIN}"
 fi
 ADMIN_UUID=$(su -m gvm -c "gvmd --get-users -v" | grep admin|awk '{print $2}')
 su -m gvm -c "gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value ${ADMIN_UUID}"
-
-# synchronize feeds
-su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
-su -m gvm -c "greenbone-scapdata-sync"
-su -m gvm -c "greenbone-certdata-sync"
-su -m gvm -c "cd /tmp && greenbone-nvt-sync"
 
 # patch gvmd rc script
 set +e
