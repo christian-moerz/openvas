@@ -55,7 +55,6 @@ fi
 
 echo Installing patch.
 cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
-cp ${BPATH}/patch/patch-src_gsad_gmp.c /usr/ports/security/gsad/files
 
 echo DATABASE
 echo Installing postgresql database.
@@ -126,8 +125,6 @@ cd /usr/ports/security/py-notus-scanner
 make install
 cd /usr/ports/security/gvmd
 make install
-cd /usr/ports/security/gsad
-make install
 
 echo Configure Notus scanner.
 echo "[notus-scanner]" > /usr/local/etc/gvm/notus-scanner.toml
@@ -150,7 +147,7 @@ service devfs restart
 fi
 
 echo Installing greenbone security assistant.
-pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm openvas
+pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm gsad openvas
 echo Update openvas config
 set +e
 cat /usr/local/etc/openvas/openvas.conf | grep db_address > /dev/null
@@ -205,6 +202,7 @@ if [ "0" == "$?" ]; then
 fi
 set +e
 
+sysrc mosquitto_enable=YES
 sysrc gsad_enable=YES
 sysrc gvmd_enable=YES
 sysrc ospd_openvas_enable=YES
@@ -218,6 +216,7 @@ su -m gvm -c "gvmd -m"
 
 # synchronize feeds
 echo Synchronizing feeds.
+mkdir -p /var/lib/openvas/plugins/notus/products
 chown -R gvm /var/lib/openvas/
 su -m gvm -c "cd /tmp && greenbone-nvt-sync"
 su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
@@ -258,6 +257,7 @@ fi
 set -e
 
 # start services
+service mosquitto start
 service gvmd start
 service gsad start
 service ospd_openvas start
