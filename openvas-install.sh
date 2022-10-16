@@ -10,10 +10,12 @@ DEPARTMENT="IT Department"
 DOMAIN=openvas
 PYVER=py39
 PORTBRANCH=2022Q4
-
+GBKEY=https://www.greenbone.net/GBCommunitySigningKey.asc
 PSQL_VERSION=13
 
 BPATH=$(dirname $0)
+cd ${BPATH}
+BPATH=$(pwd)
 
 echo Installing prerequisites.
 pkg install -y pwgen
@@ -180,7 +182,9 @@ fi
 
 echo Setting up GPG repository
 cd /var/lib/gvm/gvmd/gnupg
+fetch -o GB.asc https://www.greenbone.net/GBCommunitySigningKey.asc
 gpg --homedir /var/lib/gvm/gvmd/gnupg/ --list-keys
+gpg --homedir /var/lib/gvm/gvmd/gnupg/ --import GB.asc
 chown -R gvm:gvm /var/lib/gvm/gvmd/gnupg
 mkdir -p /var/lib/gvm/cert-data
 mkdir -p /var/lib/gvm/data-objects/gvmd
@@ -190,17 +194,27 @@ chown -R gvm:gvm /var/lib/gvm
 echo Configure and integrate mosquitto.
 echo "mqtt_server_uri = localhost:1883" >> /usr/local/etc/openvas/openvas.conf
 
+# make sure gvmd isn't running already
+set -e
+ps ax |grep gvmd > /dev/null
+if [ "0" == "$?" ]; then
+	service gvmd onestop
+fi
+set +e
+
 sysrc gsad_enable=YES
 sysrc gvmd_enable=YES
 sysrc ospd_openvas_enable=YES
 sysrc notus_scanner_enable=YES
 # Populate database
+echo Populating database.
 su -m gvm -c "gvmd -m"
 
 # Set up certificates via gvm
 # su -m gvm -c "gvm-manage-certs -a
 
 # synchronize feeds
+echo Synchronizing feeds.
 chown -R gvm /var/lib/openvas/
 su -m gvm -c "cd /tmp && greenbone-nvt-sync"
 su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
@@ -228,6 +242,15 @@ if [ "0" != "$?" ]; then
 	sed -i '' '/gvmd.pid/a\
 export PATH=/usr/local/bin:/usr/local/sbin:$PATH
 ' /usr/local/etc/rc.d/gvmd
+fi
+cat /usr/local/etc/rc.d/ospd_openvas | grep OPENVAS_GNUPG_HOME > /dev/null
+if [ "0" != "$?" ]; then
+	sed -i '' '/ospd\_openvas\_pidfile}/a\
+export OPENVAS_GNUPG_HOME=/var/lib/gvm/gvmd/gnupg
+' /usr/local/etc/rc.d/ospd_openvas
+sed -i '' '/ospd\_openvas\_pidfile}/a\
+export GNUPGHOME=/var/lib/gvm/gvmd/gnupg
+' /usr/local/etc/rc.d/ospd_openvas
 fi
 set -e
 
