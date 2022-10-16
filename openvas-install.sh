@@ -8,6 +8,7 @@ COUNTRY=AT
 COMPANY=Company
 DEPARTMENT="IT Department"
 DOMAIN=openvas
+PYVER=py39
 
 PSQL_VERSION=13
 
@@ -37,8 +38,15 @@ echo This installation is automated and does not require any further user
 echo interaction but it will take a while to complete...
 echo ""
 
+echo PREREQS
+echo Installing prerequisite utilities.
+pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
+	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket
+cd /usr/ports
+git clone --depth 1 --branch 2022Q4 https://git.freebsd.org/ports.git /usr/ports
+
 echo DATABASE
-echo Installating postgresql database.
+echo Installing postgresql database.
 set +e
 pkg info | grep postgresql${PSQL_VERSION} > /dev/null
 if [ "0" != "$?" ]; then
@@ -97,9 +105,13 @@ fi
 
 echo OPENVAS APPLICATION
 echo Installing openvas scanner.
-pkg install -y py38-ospd-openvas openvas
+# Package currently unavailable - we are moving to ports
+#pkg install -y py38-ospd-openvas openvas
+cd /usr/ports/security/py-ospd-openvas
+make install
+
 echo Installing greenbone security assistant.
-pkg install -y gvm gvm-libs gvmd py38-gvm-tools py38-python-gvm gsad
+pkg install -y gvm gvm-libs gvmd ${PYVER}-gvm-tools ${PYVER}-python-gvm gsad
 echo Update openvas config
 set +e
 cat /usr/local/etc/openvas/openvas.conf | grep db_address > /dev/null
