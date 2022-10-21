@@ -43,16 +43,6 @@ echo This installation is automated and does not require any further user
 echo interaction but it will take a while to complete...
 echo ""
 
-set +e
-cat /etc/make.conf | grep WRKDIRPREFIX > /dev/null
-if [ "0" != "$?" ]; then
-	echo "WRKDIRPREFIX?= /usr/ports/build" >> /etc/make.conf
-fi
-if [ ! -e /usr/ports/build ]; then
-	mkdir -p /usr/ports/build
-fi
-set -e
-
 echo PREREQS
 echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
@@ -63,6 +53,16 @@ cd /usr/ports
 if [ ! -e /usr/ports/.git ]; then
 	git clone --depth 1 --branch ${PORTBRANCH} https://git.freebsd.org/ports.git /usr/ports
 fi
+
+set +e
+cat /etc/make.conf | grep WRKDIRPREFIX > /dev/null
+if [ "0" != "$?" ]; then
+        echo "WRKDIRPREFIX?= /usr/ports/build" >> /etc/make.conf
+fi
+if [ ! -e /usr/ports/build ]; then
+        mkdir -p /usr/ports/build
+fi
+set -e
 
 echo Installing patch.
 cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
@@ -229,10 +229,13 @@ su -m gvm -c "gvmd -m"
 echo Synchronizing feeds.
 mkdir -p /var/lib/openvas/plugins/notus/products
 chown -R gvm /var/lib/openvas/
-su -m gvm -c "cd /tmp && greenbone-nvt-sync"
-su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
-su -m gvm -c "greenbone-feed-sync --type SCAP"
-su -m gvm -c "greenbone-feed-sync --type CERT"
+
+echo Exit.
+exit 0
+#su -m gvm -c "cd /tmp && greenbone-nvt-sync"
+#su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
+#su -m gvm -c "greenbone-feed-sync --type SCAP"
+#su -m gvm -c "greenbone-feed-sync --type CERT"
 
 # Create admin user
 set +e
