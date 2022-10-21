@@ -233,12 +233,10 @@ echo Synchronizing feeds.
 mkdir -p /var/lib/openvas/plugins/notus/products
 chown -R gvm /var/lib/openvas/
 
-echo Exit.
-exit 0
-#su -m gvm -c "cd /tmp && greenbone-nvt-sync"
-#su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
-#su -m gvm -c "greenbone-feed-sync --type SCAP"
-#su -m gvm -c "greenbone-feed-sync --type CERT"
+su -m gvm -c "cd /tmp && greenbone-nvt-sync"
+su -m gvm -c "greenbone-feed-sync --type GVMD_DATA"
+su -m gvm -c "greenbone-feed-sync --type SCAP"
+su -m gvm -c "greenbone-feed-sync --type CERT"
 
 # Create admin user
 set +e
