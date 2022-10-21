@@ -47,7 +47,7 @@ echo PREREQS
 echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
 	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket \
-	py39-urllib3 mosquitto gsa pg-gvm p5-XML-Parser wget xmlstarlet autoconf \
+	py39-urllib3 mosquitto pg-gvm p5-XML-Parser wget xmlstarlet autoconf \
 	automake sshpass socat zip samba412
 cd /usr/ports
 if [ ! -e /usr/ports/.git ]; then
@@ -63,9 +63,6 @@ if [ ! -e /usr/ports/build ]; then
         mkdir -p /usr/ports/build
 fi
 set -e
-
-echo Installing patch.
-cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
 
 echo DATABASE
 echo Installing postgresql database.
@@ -134,11 +131,13 @@ cd /usr/ports/security/py-ospd-openvas
 make install
 cd /usr/ports/security/py-notus-scanner
 make install
-cd /usr/ports/security/gvmd
-make install
 cd /usr/ports/security/gsad
 echo Patching gsad.
 cp ${BPATH}/patch/patch-src_gsad_gmp.c /usr/ports/security/gsad/files
+echo Patching gvmd.
+cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
+make install
+cd /usr/ports/security/gvmd
 make install
 
 echo Configure Notus scanner.
