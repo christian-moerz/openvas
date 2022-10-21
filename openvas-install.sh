@@ -136,6 +136,10 @@ cd /usr/ports/security/py-notus-scanner
 make install
 cd /usr/ports/security/gvmd
 make install
+cd /usr/ports/security/gsad
+echo Patching gsad.
+cp ${BPATH}/patch/patch-src_gsad_gmp.c /usr/ports/security/gsad/files
+make install
 
 echo Configure Notus scanner.
 echo "[notus-scanner]" > /usr/local/etc/gvm/notus-scanner.toml
@@ -158,7 +162,7 @@ service devfs restart
 fi
 
 echo Installing greenbone security assistant.
-pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm gsad openvas
+pkg install -y ${PYVER}-gvm-tools ${PYVER}-python-gvm openvas
 echo Update openvas config
 set +e
 cat /usr/local/etc/openvas/openvas.conf | grep db_address > /dev/null
