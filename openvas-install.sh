@@ -1,5 +1,9 @@
 #!/bin/sh
 
+#
+# Licensed under BSD license
+# 2019/10/29 - update thx to sn3ak; fixed ORG/COMPANY / issue 1
+
 set -e
 
 LOCATION=Vienna
@@ -189,7 +193,7 @@ pw groupmod redis -M gvm
 if [ ! -e /var/lib/gvm/private/CA/serverkey.pem ]; then
 	openssl req -x509 -nodes -newkey rsa:4096 -keyout /var/lib/gvm/private/CA/serverkey.pem -out /var/lib/gvm/CA/servercert.pem \
 	        -sha256 -days 365 \
-	        -subj "/C=${COUNTRY}/ST=${CITY}/L=${LOCATION}/O=${ORGANIZATION}/OU=${DEPARTMENT}/CN=${DOMAIN}"
+	        -subj "/C=${COUNTRY}/ST=${CITY}/L=${LOCATION}/O=${COMPANY}/OU=${DEPARTMENT}/CN=${DOMAIN}"
 	chown gvm:gvm /var/lib/gvm/CA/servercert.pem /var/lib/gvm/private/CA/serverkey.pem
 	chmod 400 /var/lib/gvm/private/CA/serverkey.pem
 fi
