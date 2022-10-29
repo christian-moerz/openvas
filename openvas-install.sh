@@ -137,9 +137,10 @@ cd /usr/ports/security/py-notus-scanner
 make install
 cd /usr/ports/security/gsad
 echo Patching gsad.
-cp ${BPATH}/patch/patch-src_gsad_gmp.c /usr/ports/security/gsad/files
+cp ${BPATH}/patch/patch-src_gsad.c /usr/ports/security/gsad/files
 echo Patching gvmd.
-cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
+rm /usr/ports/security/gvmd/files
+cp ${BPATH}/patch/gvmd/* /usr/ports/files/security/gvmd/files
 make install
 cd /usr/ports/security/gvmd
 make install
