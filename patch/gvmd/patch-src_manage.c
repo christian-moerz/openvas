@@ -8,12 +8,12 @@
  #include <sys/wait.h>
  #include <time.h>
  #include <unistd.h>
-@@ -5952,6 +5953,8 @@ manage_read_info (gchar *type, gchar *uid, gchar *name
+@@ -5952,7 +5953,7 @@ manage_read_info (gchar *type, gchar *uid, gchar *name
  int
  validate_username (const gchar * name)
  {
-+  if (!strcmp("admin", name))
-+    return 0;
-   if (g_regex_match_simple ("^[[:alnum:]-_.]+$", name, 0, 0))
+-  if (g_regex_match_simple ("^[[:alnum:]-_.]+$", name, 0, 0))
++  if (g_regex_match_simple ("^[[:alnum:]\\-_.]+$", name, 0, 0))
      return 0;
    else
+     return 1;

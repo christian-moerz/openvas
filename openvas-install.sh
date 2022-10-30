@@ -52,7 +52,7 @@ echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
 	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket \
 	py39-urllib3 mosquitto pg-gvm p5-XML-Parser wget xmlstarlet autoconf \
-	automake sshpass socat zip samba412
+	automake sshpass socat zip samba412 libmicrohttpd
 cd /usr/ports
 if [ ! -e /usr/ports/.git ]; then
 	git clone --depth 1 --branch ${PORTBRANCH} https://git.freebsd.org/ports.git /usr/ports
@@ -132,17 +132,48 @@ echo Installing openvas scanner.
 # Package currently unavailable - we are moving to ports
 #pkg install -y py38-ospd-openvas openvas
 cd /usr/ports/security/py-ospd-openvas
-make install
+set +e
+pkg info | grep ospd-openvas > /dev/null
+if [ "0" != "$?" ]; then
+	set -e
+	make install
+fi
+set -e
 cd /usr/ports/security/py-notus-scanner
-make install
-cd /usr/ports/security/gsad
-echo Patching gsad.
-cp ${BPATH}/patch/patch-src_gsad_gmp.c /usr/ports/security/gsad/files
-echo Patching gvmd.
-cp ${BPATH}/patch/patch-src_manage.c /usr/ports/security/gvmd/files
-make install
-cd /usr/ports/security/gvmd
-make install
+set +e
+pkg info | grep notus-scanner > /dev/null
+if [ "0" != "$?" ]; then
+	set -e
+	make install
+fi
+set -e
+
+set +e
+pkg info | grep gsad > /dev/null
+if [ "0" != "$?" ]; then
+	set -e
+	cd /usr/ports/security/gsad
+	echo Patching gsad.
+		cp ${BPATH}/patch/patch-src_gsad.c /usr/ports/security/gsad/files
+	make install
+fi
+set -e
+
+set +e
+echo Checking gvmd installation.
+pkg info | grep gvmd > /dev/null
+if [ "0" != "$?" ]; then
+	set -e
+	echo Patching gvmd.
+	#rm /usr/ports/security/gvmd/files/*
+	#cp ${BPATH}/patch/gvmd/* /usr/ports/security/gvmd/files
+	cd /usr/ports/security/gvmd
+	make install
+	echo Exit code $?
+else
+	echo gvmd already installed. Skipping.
+fi
+set -e
 
 echo Configure Notus scanner.
 echo "[notus-scanner]" > /usr/local/etc/gvm/notus-scanner.toml
@@ -218,6 +249,16 @@ ps ax |grep gvmd > /dev/null
 if [ "0" == "$?" ]; then
 	service gvmd onestop
 fi
+ps ax |grep mosq > /dev/null
+if [ "0" == "$?" ]; then
+	service mosquitto stop
+fi
+ps ax |grep gsad > /dev/null
+if [ 0" == "$?" ]; then
+	service gsad stop
+	sleep 1
+	pkill -9 gsad
+fi
 set -e
 
 sysrc mosquitto_enable=YES
@@ -273,6 +314,13 @@ export GNUPGHOME=/var/lib/gvm/gvmd/gnupg
 ' /usr/local/etc/rc.d/ospd_openvas
 fi
 set -e
+
+# creating missing directories
+mkdir -p /usr/local/share/gvm/gsad
+chown gvm:gvm /usr/local/share/gvm/gsad
+mkdir -p /usr/local/share/gvm/gsad/web
+chown gvm:gvm /usr/local/share/gvm/gsad/web
+pkg install -y gsa
 
 # start services
 service mosquitto start
