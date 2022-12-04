@@ -254,7 +254,7 @@ if [ "0" == "$?" ]; then
 	service mosquitto stop
 fi
 ps ax |grep gsad > /dev/null
-if [ 0" == "$?" ]; then
+if [ "0" == "$?" ]; then
 	service gsad stop
 	sleep 1
 	pkill -9 gsad
