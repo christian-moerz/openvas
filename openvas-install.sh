@@ -165,8 +165,8 @@ pkg info | grep gvmd > /dev/null
 if [ "0" != "$?" ]; then
 	set -e
 	echo Patching gvmd.
-	#rm /usr/ports/security/gvmd/files/*
-	#cp ${BPATH}/patch/gvmd/* /usr/ports/security/gvmd/files
+	rm /usr/ports/security/gvmd/files/*
+	cp ${BPATH}/patch/gvmd/* /usr/ports/security/gvmd/files
 	cd /usr/ports/security/gvmd
 	make install
 	echo Exit code $?
