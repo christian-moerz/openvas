@@ -52,10 +52,12 @@ echo Installing prerequisite utilities.
 pkg install -y git py39-cython libxslt py39-lxml py39-paramiko bison cmake-core \
 	ninja pkgconf gvm-libs libpcap net-snmp json-glib rsync nmap py39-impacket \
 	py39-urllib3 mosquitto pg-gvm p5-XML-Parser wget xmlstarlet autoconf \
-	automake sshpass socat zip samba412 libmicrohttpd
+	automake sshpass socat zip samba413 libmicrohttpd
+
 if [ ! -e /usr/ports ]; then
         mkdir -p /usr/ports
 fi
+
 cd /usr/ports
 if [ ! -e /usr/ports/.git ]; then
 	git clone --depth 1 --branch ${PORTBRANCH} https://git.freebsd.org/ports.git /usr/ports
